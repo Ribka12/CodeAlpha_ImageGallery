@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Gallery</title>
+    <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+
+    <!-- Styles -->
+    <style>
+      /* Reset & Base Styles */
+      body {
+        font-family: "Segoe UI", sans-serif;
+        margin: 0;
+        background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+        color: #fff;
+      }
+
+      /* Gallery Title */
+      .gallery-title {
+        font-size: clamp(1rem, calc(1rem + 3vw), 4rem);
+        font-weight: bold;
+        letter-spacing: 3px;
+        margin: 40px 0 70px;
+        text-align: center;
+
+        /* Gradient text  */
+        background: linear-gradient(145deg, #9ad4e3, #5ca8c9, #7bb6c5);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+
+        /* Glow */
+        text-shadow: 0 0 8px rgba(154, 212, 227, 0.4),
+          0 0 15px rgba(92, 168, 201, 0.5);
+
+        /* Animation */
+        display: inline-block;
+        animation: moveTitle 20s linear infinite;
+      }
+
+      /* Title Animation */
+      @keyframes moveTitle {
+        0% {
+          transform: translateX(0);
+        } /* left edge */
+        50% {
+          transform: translateX(calc(100vw - 100%));
+        } /* right edge */
+        100% {
+          transform: translateX(0);
+        } /* back to left edge */
+      }
+
+      /* Filter Buttons */
+      .filter-buttons {
+        position: sticky;
+        top: 0;
+        z-index: 999;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        background: linear-gradient(135deg, #0f2027, #203a43, #2c5364, 1);
+        padding: 15px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .filter-buttons button {
+        font-size: medium;
+        margin: 10px;
+        padding: 12px 27px;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        transition: all 0.3s ease;
+      }
+
+      .filter-buttons button:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.1);
+      }
+
+      /* Gallery */
+      .gallery {
+        column-count: 4; /* number of columns */
+        column-gap: 15px;
+        padding: 20px;
+      }
+
+      .gallery-item {
+        position: relative;
+        margin-bottom: 15px;
+        display: inline-block;
+        width: 100%;
+        cursor: pointer;
+      }
+
+      .gallery-item img {
+        width: 100%;
+        height: auto;
+        border-radius: 12px;
+        transition: transform 0.3s ease, filter 0.3s ease;
+      }
+
+      /* Base overlay style */
+      .gallery-item::after {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        text-align: center;
+        padding: 10px;
+        font-size: 1rem;
+        border-radius: 0 0 12px 12px;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+        pointer-events: none;
+      }
+
+      /* Show on hover */
+      .gallery-item:hover::after {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Category-specific labels with icons */
+      .gallery-item[data-category="nature"]::after {
+        content: "🌿 Nature";
+      }
+
+      .gallery-item[data-category="city"]::after {
+        content: "🏙️ City";
+      }
+
+      .gallery-item[data-category="animals"]::after {
+        content: "🐾 Animals";
+      }
+
+      .gallery-item[data-category="food"]::after {
+        content: "🍔 Food";
+      }
+
+      .gallery-item[data-category="tech"]::after {
+        content: "💻 Tech";
+      }
+
+      .gallery-item[data-category="art"]::after {
+        content: "🎨 Art";
+      }
+
+      /* Hover effect */
+      .gallery-item:hover img {
+        transform: scale(1.05);
+        filter: brightness(0.7) saturate(1.2);
+      }
+
+      /* Lightbox */
+      .lightbox {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.95);
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      }
+
+      .lightbox img {
+        max-width: 90%;
+        max-height: 80%;
+        border-radius: 10px;
+      }
+
+      .lightbox.active {
+        display: flex;
+      }
+
+      .lightbox .close,
+      .lightbox .prev,
+      .lightbox .next {
+        position: absolute;
+        color: white;
+        font-size: 2rem;
+        cursor: pointer;
+        user-select: none;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+      }
+
+      .lightbox .close {
+        top: 20px;
+        right: 30px;
+      }
+      .lightbox .prev {
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      .lightbox .next {
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      /* footer */
+      .footer {
+        text-align: center;
+        padding: 20px;
+        color: #f1f1f1;
+        letter-spacing: 2px;
+        background-color: #12242b;
+      }
+      /* Responsive */
+      @media (max-width: 1200px) {
+        .gallery {
+          column-count: 3;
+        }
+      }
+      @media (max-width: 800px) {
+        .gallery {
+          column-count: 2;
+        }
+      }
+      @media (max-width: 500px) {
+        .gallery {
+          column-count: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Gallery Title -->
+    <h1 class="gallery-title">✨ Image Gallery ✨</h1>
+
+    <!-- Filter Buttons -->
+    <div class="filter-buttons">
+      <button onclick="filterImages('all')">All</button>
+      <button onclick="filterImages('nature')">Nature</button>
+      <button onclick="filterImages('city')">City</button>
+      <button onclick="filterImages('animals')">Animals</button>
+      <button onclick="filterImages('food')">Food</button>
+      <button onclick="filterImages('tech')">Tech</button>
+      <button onclick="filterImages('art')">Art</button>
+    </div>
+
+    <!-- Gallery -->
+    <div class="gallery" id="gallery">
+      <!-- NATURE (16 images) -->
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-1.jpg" alt="Nature" title="nature" />
+      </div>
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-2.jpg" alt="Nature" title="nature" />
+      </div>
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-3.jpg" alt="Nature" title="nature" />
+      </div>
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-4.jpg" alt="Nature" title="nature" />
+      </div>
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-5.jpg" alt="Nature" title="nature" />
+      </div>
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-6.jpg" alt="Nature" title="nature" />
+      </div>
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-7.jpeg" alt="Nature" title="nature" />
+      </div>
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-8.jpg" alt="Nature" title="nature" />
+      </div>
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-9.jpg" alt="Nature" title="nature" />
+      </div>
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-10.jpg" alt="Nature" title="nature" />
+      </div>
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-11.jpg" alt="Nature" title="nature" />
+      </div>
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-12.jpg" alt="Nature" title="nature" />
+      </div>
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-13.jpg" alt="Nature" title="nature" />
+      </div>
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-14.jpeg" alt="Nature" title="nature" />
+      </div>
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-15.jpg" alt="Nature" title="nature" />
+      </div>
+      <div class="gallery-item" data-category="nature">
+        <img src="./images/img-16.jpg" alt="Nature" title="nature" />
+      </div>
+
+      <!-- CITY (15 images) -->
+      <div class="gallery-item" data-category="city">
+        <img src="./images/img-17.jpg" alt="City" title="city" />
+      </div>
+      <div class="gallery-item" data-category="city">
+        <img src="./images/img-18.jpg" alt="City" title="city" />
+      </div>
+      <div class="gallery-item" data-category="city">
+        <img src="./images/img-19.jpg" alt="City" title="city" />
+      </div>
+      <div class="gallery-item" data-category="city">
+        <img src="./images/img-20.jpg" alt="City" title="city" />
+      </div>
+      <div class="gallery-item" data-category="city">
+        <img src="./images/img-21.jpg" alt="City" title="city" />
+      </div>
+      <div class="gallery-item" data-category="city">
+        <img src="./images/img-22.jpg" alt="City" title="city" />
+      </div>
+      <div class="gallery-item" data-category="city">
+        <img src="./images/img-23.jpg" alt="City" title="city" />
+      </div>
+      <div class="gallery-item" data-category="city">
+        <img src="./images/img-24.jpg" alt="City" title="city" />
+      </div>
+      <div class="gallery-item" data-category="city">
+        <img src="./images/img-25.jpg" alt="City" title="city" />
+      </div>
+      <div class="gallery-item" data-category="city">
+        <img src="./images/img-26.jpg" alt="City" title="city" />
+      </div>
+      <div class="gallery-item" data-category="city">
+        <img src="./images/img-27.jpg" alt="City" title="city" />
+      </div>
+      <div class="gallery-item" data-category="city">
+        <img src="./images/img-additional.jpg" alt="City" title="city" />
+      </div>
+      <div class="gallery-item" data-category="city">
+        <img src="./images/img-28.jpg" alt="City" title="city" />
+      </div>
+      <div class="gallery-item" data-category="city">
+        <img src="./images/img-29.jpg" alt="City" title="city" />
+      </div>
+      <div class="gallery-item" data-category="city">
+        <img src="./images/img-30.jpg" alt="City" title="city" />
+      </div>
+
+      <!-- ANIMALS (19 images) -->
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-31.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-32.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-33.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-34.jpeg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-35.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-36.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-37.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-38.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-39.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-40.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-41.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-42.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-43.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-44.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-45.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-46.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-47.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-48.jpg" alt="Animals" title="animals" />
+      </div>
+      <div class="gallery-item" data-category="animals">
+        <img src="./images/img-49.jpg" alt="Animals" title="animals" />
+      </div>
+
+      <!-- FOOD (13 images) -->
+      <div class="gallery-item" data-category="food">
+        <img src="./images/img-50.jpg" alt="Food" title="food" />
+      </div>
+      <div class="gallery-item" data-category="food">
+        <img src="./images/img-51.jpeg" alt="Food" title="food" />
+      </div>
+      <div class="gallery-item" data-category="food">
+        <img src="./images/img-52.jpg" alt="Food" title="food" />
+      </div>
+      <div class="gallery-item" data-category="food">
+        <img src="./images/img-53.jpg" alt="Food" title="food" />
+      </div>
+      <div class="gallery-item" data-category="food">
+        <img src="./images/img-54.jpg" alt="Food" title="food" />
+      </div>
+      <div class="gallery-item" data-category="food">
+        <img src="./images/img-55.jpg" alt="Food" title="food" />
+      </div>
+      <div class="gallery-item" data-category="food">
+        <img src="./images/img-56.jpg" alt="Food" title="food" />
+      </div>
+      <div class="gallery-item" data-category="food">
+        <img src="./images/img-57.jpg" alt="Food" title="food" />
+      </div>
+      <div class="gallery-item" data-category="food">
+        <img src="./images/img-58.jpg" alt="Food" title="food" />
+      </div>
+      <div class="gallery-item" data-category="food">
+        <img src="./images/img-59.jpeg" alt="Food" title="food" />
+      </div>
+      <div class="gallery-item" data-category="food">
+        <img src="./images/img-60.jpg" alt="Food" title="food" />
+      </div>
+      <div class="gallery-item" data-category="food">
+        <img src="./images/img-61.jpg" alt="Food" title="food" />
+      </div>
+      <div class="gallery-item" data-category="food">
+        <img src="./images/img-62.jpg" alt="Food" title="food" />
+      </div>
+
+      <!-- TECH (17 images) -->
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-63.jpg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-64.jpg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-65.jpeg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-66.jpeg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-67.jpeg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-68.jpeg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-69.jpg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-70.jpg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-71.jpg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-72.jpg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-73.jpg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-74.jpg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-75.jpg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-76.jpg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-77.jpg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-78.jpg" alt="Tech" title="tech" />
+      </div>
+      <div class="gallery-item" data-category="tech">
+        <img src="./images/img-79.jpg" alt="Tech" title="tech" />
+      </div>
+
+      <!-- ART (16 images) -->
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-80.jpg" alt="Art" title="art" />
+      </div>
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-81.jpg" alt="Art" title="art" />
+      </div>
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-82.jpg" alt="Art" title="art" />
+      </div>
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-83.jpg" alt="Art" title="art" />
+      </div>
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-84.jpg" alt="Art" title="art" />
+      </div>
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-85.jpg" alt="Art" title="art" />
+      </div>
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-86.jpg" alt="Art" title="art" />
+      </div>
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-87.jpg" alt="Art" title="art" />
+      </div>
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-88.jpg" alt="Art" title="art" />
+      </div>
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-89.jpg" alt="Art" title="art" />
+      </div>
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-90.jpg" alt="Art" title="art" />
+      </div>
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-91.jpg" alt="Art" title="art" />
+      </div>
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-92.jpg" alt="Art" title="art" />
+      </div>
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-93.jpg" alt="Art" title="art" />
+      </div>
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-94.jpg" alt="Art" title="art" />
+      </div>
+      <div class="gallery-item" data-category="art">
+        <img src="./images/img-95.jpg" alt="Art" title="art" />
+      </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox">
+      <span class="close" onclick="closeLightbox()">&times;</span>
+      <span class="prev" onclick="prevImage()">&#10094;</span>
+      <img id="lightbox-img" src="" />
+      <span class="next" onclick="nextImage()">&#10095;</span>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>&copy; 2025 All Right Reserved.</p>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+      const galleryItems = document.querySelectorAll(".gallery-item");
+      const lightbox = document.getElementById("lightbox");
+      const lightboxImg = document.getElementById("lightbox-img");
+      let currentIndex = 0;
+
+      // Open Lightbox
+      galleryItems.forEach((item, index) => {
+        item.addEventListener("click", () => {
+          lightbox.classList.add("active");
+          lightboxImg.src = item.querySelector("img").src;
+          currentIndex = index;
+        });
+      });
+
+      function closeLightbox() {
+        lightbox.classList.remove("active");
+      }
+      function nextImage() {
+        currentIndex = (currentIndex + 1) % galleryItems.length;
+        lightboxImg.src = galleryItems[currentIndex].querySelector("img").src;
+      }
+      function prevImage() {
+        currentIndex =
+          (currentIndex - 1 + galleryItems.length) % galleryItems.length;
+        lightboxImg.src = galleryItems[currentIndex].querySelector("img").src;
+      }
+
+      // Filter
+      function filterImages(category) {
+        galleryItems.forEach((item) => {
+          if (category === "all" || item.dataset.category === category) {
+            item.style.display = "block";
+          } else {
+            item.style.display = "none";
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
